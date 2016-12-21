@@ -11,11 +11,12 @@ namespace ConsoleApplication1
         static void Main(string[] args)
         {
             List<string> route = new List<string> { "AB5", "BC4", "CD8", "DC8", "DE68", "AD58", "CE28", "EB38", "AE7" };
+            List<string> ways = new List<string>() { "A-B-C" };
             TrafficMap map = new TrafficMap(route);
-
-
-
-
+            foreach (var way in ways)
+            {
+                Console.Write(map.FindShortestDistance(way));
+            }
         }
 
 
@@ -56,7 +57,7 @@ namespace ConsoleApplication1
                 }
             }
         }
-        public int FindAWayDistance(string way)
+        public int FindShortestDistance(string way)
         {
             return 0;
         }
