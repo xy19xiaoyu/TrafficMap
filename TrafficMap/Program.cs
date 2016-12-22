@@ -1,4 +1,11 @@
-﻿using System;
+﻿/*
+ * 开发环境
+ * VS2015,.net 4.5.2
+ * 陈晓雨 2016-12-22 
+ */
+
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,12 +20,7 @@ namespace TrafficMap
             List<string> route = new List<string> { "AB5", "BC4", "CD8", "DC8", "DE6", "AD5", "CE2", "EB3", "AE7" };
             TrafficMap map = new TrafficMap(route);
 
-            #region  问题7
-            Console.WriteLine($"Output #6: {map.FindWay("C-C", 3)}"); ;
-            #endregion
-
-
-            #region 问题1-5
+            #region 问题1-5 检测路线是否存在
             List<string> ways = new List<string>() { "A-B-C", "A-D", "A-D-C", "A-E-B-C-D", "A-E-D" };
             foreach (var way in ways)
             {
@@ -26,21 +28,38 @@ namespace TrafficMap
             }
             #endregion
 
-            #region  问题7
-            Console.WriteLine($"Output #6: {map.FindWay("C-C", 3)}"); ;
+            #region  问题6 
+            List<Way> P6 = map.FindWays("C-C");
+            var P6Result = from y in P6
+                           where y.Routes.Count <= 3
+                           select y;
+            Console.WriteLine($"Output #6: {P6Result.Count()}"); ;
             #endregion
 
             #region  问题7
-
+            List<Way> P7 = map.FindWays("A-C");
+            var P7Result = from y in P7
+                           where y.Routes.Count == 4
+                           select y;
+            Console.WriteLine($"Output #7: {P7Result.Count()}");
             #endregion
 
             #region 问题8
-            Console.WriteLine($"Output #8: {map.FindShortestDistance("A-C")}");
+            Console.WriteLine($"Output #8: {map.FindShortest("A-C")}");
             #endregion
 
             #region 问题9
-            Console.WriteLine($"Output #9: {map.FindShortestDistance("B-B")}");
+            Console.WriteLine($"Output #9: {map.FindShortest("B-B")}");
             #endregion
+
+            #region  问题10
+            List<Way> P10 = map.FindWays("C-C");
+            var P10Result = from y in P10
+                            where y.Distance < 30
+                            select y;
+            Console.WriteLine($"Output #10: {P10Result.Count()}"); ;
+            #endregion
+
 
             Console.ReadKey();
         }
@@ -54,10 +73,8 @@ namespace TrafficMap
     public class TrafficMap
     {
         /// <summary>
-        /// 用来存放已经尝试过的始发站
+        /// 所有的单向线路
         /// </summary>
-
-        //所有的单向线路
         public List<Route> Routes { get; set; }
         /// <summary>
         /// 所有的车站
@@ -91,7 +108,7 @@ namespace TrafficMap
         #region 检测路线是否存在
         public string CheckWay(string way)
         {
-            Line line;
+            Way line;
             line = CheckRoutes(way);
             string result = "NO SUCH ROUTE";
             if (line != null)
@@ -100,9 +117,9 @@ namespace TrafficMap
             }
             return result;
         }
-        public Line CheckRoutes(string way)
+        public Way CheckRoutes(string way)
         {
-            Line line = new Line();
+            Way line = new Way();
             string[] waypoint = way.Split('-');
             for (int i = 0; i < waypoint.Length - 1; i++)
             {
@@ -141,44 +158,44 @@ namespace TrafficMap
         #endregion
 
         #region 查找最短路线
-        public string FindShortestDistance(string way)
+        public string FindShortest(string strway)
         {
 
-            Line line;
-            line = FindShortestWay(way);
+            Way way;
+            way = FindShortestWay(strway);
             string result = "NO SUCH ROUTE";
-            if (line != null)
+            if (way != null)
             {
-                result = line.Distance.ToString();
+                result = way.Distance.ToString();
             }
             return result;
         }
-        public Line FindShortestWay(string way)
+        public Way FindShortestWay(string strway)
         {
 
-            Line line = new Line();
-            string[] waypoint = way.Split('-');
+            Way way = new Way();
+            string[] waypoint = strway.Split('-');
             for (int i = 0; i < waypoint.Length - 1; i++)
             {
-                Line subroutes = FindShortestWay(waypoint[i], waypoint[i + 1]);
+                Way subroutes = FindShortestWay(waypoint[i], waypoint[i + 1]);
                 if (subroutes != null && subroutes.Routes.Count > 0)
                 {
-                    line.Routes.AddRange(subroutes.Routes);
+                    way.Routes.AddRange(subroutes.Routes);
                 }
                 else
                 {
                     //有一个节点不通
-                    line = null;
+                    way = null;
                     break;
                 }
             }
-            return line;
+            return way;
         }
         private Stack<string> haschecked = new Stack<string>();
-        public Line FindShortestWay(string start, string nextstop)
+        public Way FindShortestWay(string start, string nextstop)
         {
 
-            List<Line> lines = new List<Line>();
+            List<Way> lines = new List<Way>();
 
             if (Stations.ContainsKey(start))
             {
@@ -189,7 +206,7 @@ namespace TrafficMap
                     if (x.NextStop == nextstop)
                     {
                         //如果这条路线的终点站就是要找的终点站
-                        Line line = new Line();
+                        Way line = new Way();
                         line.Routes.Add(x);
                         lines.Add(line);
                     }
@@ -200,10 +217,10 @@ namespace TrafficMap
 
                             haschecked.Push(x.NextStop);
                             //尝试查找以这条终点站为始发站的路线是否能到达 查询的终点站
-                            Line tmpresult = FindShortestWay(x.NextStop, nextstop);
+                            Way tmpresult = FindShortestWay(x.NextStop, nextstop);
                             if (tmpresult != null)
                             {
-                                Line line = new Line();
+                                Way line = new Way();
                                 line.Routes.Add(x);
                                 line.Routes.AddRange(tmpresult.Routes);
                                 lines.Add(line);
@@ -226,21 +243,17 @@ namespace TrafficMap
         }
         #endregion
 
-        #region 查找点到点之间的有路线
-        /// <summary>
-        /// 查找路线
-        /// </summary>
-        /// <param name="way">期望路线</param>
-        /// <param name="maxstops">最多换乘</param>
-        /// <returns></returns>
-        public List<Line> FindWay(string way, int maxstops)
+        #region 查找点到点之间可能的路线路线长度 条件 总长度<=30
+        private const int MaxDistance = 30;
+        private int wayDistance = 0;
+        public List<Way> FindWays(string way)
         {
-            List<Line> Ways = new List<Line>();
-
+            List<Way> Ways = new List<Way>();
+            wayDistance = 0;
             string[] waypoint = way.Split('-');
             for (int i = 0; i < waypoint.Length - 1; i++)
             {
-                List<Line> sub_ways = FindWays(waypoint[i], waypoint[i + 1]);
+                List<Way> sub_ways = FindWays(waypoint[i], waypoint[i + 1]);
                 if (sub_ways != null)
                 {
                     if (Ways.Count == 0)
@@ -249,12 +262,12 @@ namespace TrafficMap
                     }
                     else
                     {
-                        List<Line> tmpways = new List<Line>();
+                        List<Way> tmpways = new List<Way>();
                         foreach (var x in Ways)
                         {
                             foreach (var y in sub_ways)
                             {
-                                Line l = new Line();
+                                Way l = new Way();
                                 l.Routes.AddRange(x.Routes);
                                 l.Routes.AddRange(y.Routes);
                                 tmpways.Add(l);
@@ -270,52 +283,85 @@ namespace TrafficMap
                     break;
                 }
             }
-            return Ways.Where(x => x.Routes.Count <= 3).ToList<Line>();
+            return Ways;
         }
-        public List<Line> FindWays(string start, string nextstop)
+        /// <summary>
+        /// 查找两点之间尽可能出现的距离，前提 距离小于等于30(有条件的递归,防止死循环)
+        /// </summary>
+        /// <param name="start"></param>
+        /// <param name="nextstop"></param>
+        /// <returns></returns>
+        public List<Way> FindWays(string start, string nextstop)
         {
 
-            List<Line> lines = new List<Line>();
-
+            List<Way> ways = new List<Way>();
             if (Stations.ContainsKey(start))
             {
-
                 foreach (var x in Stations[start].Routes)
                 {
-
                     if (x.NextStop == nextstop)
                     {
-                        //如果这条路线的终点站就是要找的终点站
-                        Line line = new Line();
-                        line.Routes.Add(x);
-                        lines.Add(line);
+                        if (wayDistance + x.Distance <= MaxDistance)
+                        {
+                            //如果这条路线的终点站就是要找的终点站
+                            Way way = new Way();
+                            way.Routes.Add(x);
+                            ways.Add(way);
+
+                            #region 查找此站出发是否能返回此站
+                            wayDistance += x.Distance;
+                            List<Way> sub_ways = FindWays(x.NextStop, nextstop);
+                            wayDistance -= x.Distance;
+                            if (sub_ways != null)
+                            {
+                                List<Way> tmpways = new List<Way>();
+                                foreach (var y in sub_ways)
+                                {
+                                    Way l = new Way();
+                                    l.Routes.AddRange(way.Routes);
+                                    l.Routes.AddRange(y.Routes);
+                                    tmpways.Add(l);
+                                }
+                                ways.AddRange(tmpways);
+                            }
+                            #endregion
+                        }
+
                     }
                     else
                     {
-                        if (!haschecked.Contains(x.NextStop))
+                        //如果尝试查找以这条终点站为起点的路线，先计算其距离是否已经超标
+                        if (wayDistance + x.Distance <= MaxDistance)
                         {
-
-                            haschecked.Push(x.NextStop);
-                            //尝试查找以这条终点站为始发站的路线是否能到达 查询的终点站
-                            Line tmpresult = FindShortestWay(x.NextStop, nextstop);
-                            if (tmpresult != null)
+                            wayDistance += x.Distance;
+                            List<Way> sub_ways = FindWays(x.NextStop, nextstop);
+                            wayDistance -= x.Distance;
+                            if (sub_ways != null)
                             {
-                                Line line = new Line();
-                                line.Routes.Add(x);
-                                line.Routes.AddRange(tmpresult.Routes);
-                                lines.Add(line);
-                            }
-                            haschecked.Pop();
+                                //如果有线路可走
+                                Way way = new Way();
+                                way.Routes.Add(x);
 
+
+                                List<Way> tmpways = new List<Way>();
+                                foreach (var y in sub_ways)
+                                {
+                                    Way tmpw = new Way();
+                                    tmpw.Routes.AddRange(way.Routes);
+                                    tmpw.Routes.AddRange(y.Routes);
+                                    tmpways.Add(tmpw);
+                                }
+                                ways.AddRange(tmpways);
+                            }
                         }
                     }
                 }
+
             }
-            return lines;
+            if (ways.Count == 0) ways = null;
+            return ways;
         }
         #endregion
-
-
     }
 
     public class Station
@@ -337,9 +383,12 @@ namespace TrafficMap
         public List<Route> Routes { get; set; }
 
     }
-    public class Line
+    /// <summary>
+    /// 路线
+    /// </summary>
+    public class Way
     {
-        public Line()
+        public Way()
         {
             Routes = new List<Route>();
         }
@@ -347,6 +396,16 @@ namespace TrafficMap
         public int Distance
         {
             get { return Routes.Sum(x => x.Distance); }
+        }
+
+        public override string ToString()
+        {
+            string tmp = "";
+            foreach (var x in Routes)
+            {
+                tmp += x.Name + "->";
+            }
+            return $"{ Distance}：{tmp}";
         }
     }
     /// <summary>
